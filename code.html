@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hotel KPI Dashboard</title>
+  <style>
+    :root{
+      --bg: #0f172a;          /* slate-900 */
+      --panel: #111827;       /* gray-900 */
+      --muted: #94a3b8;       /* slate-400 */
+      --text: #e5e7eb;        /* gray-200 */
+      --accent: #22d3ee;      /* cyan-400 */
+      --ok: #34d399;          /* emerald-400 */
+      --warn: #fbbf24;        /* amber-400 */
+      --err: #f87171;         /* red-400 */
+      --ring: #334155;        /* slate-700 */
+    }
+
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 80% -20%, #1f2937, transparent 60%), var(--bg);
+      display: grid;
+      place-items: start center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(100%, 960px);
+      display: grid;
+      gap: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .title {
+      font-weight: 700;
+      font-size: clamp(1.25rem, 1.2rem + 1vw, 1.75rem);
+      letter-spacing: 0.2px;
+    }
+    .subtle { color: var(--muted); font-size: 0.95rem; }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid #1f2937; /* gray-800 */
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 720px) {
+      .grid { grid-template-columns: 1.1fr 1fr; }
+    }
+
+    .inputs {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field { display: grid; gap: 6px; }
+    .label { font-weight: 600; }
+
+    .input {
+      appearance: textfield;
+      background: #0b1220; /* deep slate */
+      color: var(--text);
+      border: 1px solid var(--ring);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+      font-size: 1rem;
+    }
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.15);
+    }
+    .input:invalid { border-color: var(--warn); }
+
+    .note { color: var(--muted); font-size: 0.9rem; }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .kpi {
+      background: #0b1220;
+      border: 1px solid var(--ring);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 6px;
+      min-height: 90px;
+    }
+    .kpi .name { color: var(--muted); font-size: 0.9rem; }
+    .kpi .value { font-size: clamp(1.2rem, 1rem + 1.6vw, 1.9rem); font-weight: 700; }
+
+    .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--ring);
+      color: var(--muted);
+      background: #0b1220;
+      font-size: 0.85rem;
+    }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    button {
+      cursor: pointer;
+      border: 1px solid var(--ring);
+      background: linear-gradient(180deg, #111827, #0b1220);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: transform .05s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    button:hover { border-color: var(--accent); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+    button:active { transform: translateY(1px); }
+
+    .footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+    .sr-only { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <main class="app" role="main">
+    <div class="header">
+      <div>
+        <div class="title">Hotel KPI Dashboard</div>
+        <div class="subtle">Enter core metrics to calculate Occupancy, ADR, and RevPAR in real-time.</div>
+      </div>
+      <div class="actions">
+        <button id="btn-demo" type="button" title="Load example numbers">Load sample data</button>
+        <button id="btn-reset" type="button" title="Clear all values">Reset</button>
+      </div>
+    </div>
+
+    <section class="grid">
+      <section class="panel">
+        <h2 class="sr-only">Inputs</h2>
+        <div class="inputs" id="inputs">
+          <div class="field">
+            <label class="label" for="totalRooms">Total Rooms Available</label>
+            <input class="input" id="totalRooms" name="totalRooms" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g., 150" aria-describedby="totalRoomsNote" />
+            <div id="totalRoomsNote" class="note">Whole number of rooms available for sale in the period.</div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="roomsSold">Rooms Sold</label>
+            <input class="input" id="roomsSold" name="roomsSold" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g., 120" aria-describedby="roomsSoldNote" />
+            <div id="roomsSoldNote" class="note">Whole number of rooms sold (occupied) in the period.</div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="roomRevenue">Total Room Revenue ($)</label>
+            <input class="input" id="roomRevenue" name="roomRevenue" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g., 15500.00" aria-describedby="roomRevenueNote" />
+            <div id="roomRevenueNote" class="note">Room revenue before taxes/fees for the period.</div>
+          </div>
+
+          <div class="row">
+            <span class="pill" id="status-pill" aria-live="polite">Ready</span>
+            <span class="pill" id="summary-pill" aria-live="polite">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="sr-only">KPIs</h2>
+        <div class="kpis" aria-live="polite" aria-atomic="true">
+          <article class="kpi" aria-labelledby="kpi-occ-label">
+            <div id="kpi-occ-label" class="name">Occupancy</div>
+            <div id="kpi-occ" class="value">—</div>
+            <div class="note">=(Rooms Sold ÷ Total Rooms) × 100</div>
+          </article>
+          <article class="kpi" aria-labelledby="kpi-adr-label">
+            <div id="kpi-adr-label" class="name">Average Daily Rate (ADR)</div>
+            <div id="kpi-adr" class="value">—</div>
+            <div class="note">=Total Room Revenue ÷ Rooms Sold</div>
+          </article>
+          <article class="kpi" aria-labelledby="kpi-revpar-label">
+            <div id="kpi-revpar-label" class="name">RevPAR</div>
+            <div id="kpi-revpar" class="value">—</div>
+            <div class="note">=Total Room Revenue ÷ Total Rooms</div>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <p class="footer">Handles edge cases gracefully (displays <em>N/A</em> when a denominator is 0). Values update as you type.</p>
+  </main>
+
+  <script>
+    // --- Utilities ---------------------------------------------------------
+    const $ = (sel, ctx = document) => ctx.querySelector(sel);
+
+    const fmtCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function formatMoney(n) {
+      if (!isFinite(n)) return 'N/A';
+      return fmtCurrency.format(n);
+    }
+
+    function formatPercent(n) {
+      if (!isFinite(n)) return 'N/A';
+      return `${n.toFixed(2)}%`;
+    }
+
+    // Safe divide: if denominator is 0, return NaN so we render N/A
+    function safeDivide(numer, denom) {
+      numer = Number(numer);
+      denom = Number(denom);
+      if (!isFinite(numer) || !isFinite(denom) || denom === 0) return NaN;
+      return numer / denom;
+    }
+
+    // Clamp negatives to 0 but remember if we changed anything for messaging
+    function sanitizeNonNegative(value) {
+      let num = Number(value);
+      if (!isFinite(num) || num < 0) return { value: Math.max(0, isFinite(num) ? num : 0), clamped: true };
+      return { value: num, clamped: false };
+    }
+
+    // --- Elements ----------------------------------------------------------
+    const elTotalRooms = $('#totalRooms');
+    const elRoomsSold = $('#roomsSold');
+    const elRevenue = $('#roomRevenue');
+
+    const elOcc = $('#kpi-occ');
+    const elAdr = $('#kpi-adr');
+    const elRevpar = $('#kpi-revpar');
+
+    const statusPill = $('#status-pill');
+    const summaryPill = $('#summary-pill');
+
+    const inputs = [elTotalRooms, elRoomsSold, elRevenue];
+
+    // --- Core computation --------------------------------------------------
+    function computeAndRender() {
+      // Sanitize inputs (no negatives, invalid -> 0)
+      let { value: totalRooms, clamped: c1 } = sanitizeNonNegative(elTotalRooms.value);
+      let { value: roomsSold, clamped: c2 } = sanitizeNonNegative(elRoomsSold.value);
+      let { value: revenue, clamped: c3 } = sanitizeNonNegative(elRevenue.value);
+
+      // Write back sanitized values if needed (only when input is not empty)
+      if (c1 && elTotalRooms.value !== '') elTotalRooms.value = totalRooms;
+      if (c2 && elRoomsSold.value !== '') elRoomsSold.value = roomsSold;
+      if (c3 && elRevenue.value !== '') elRevenue.value = revenue.toString();
+
+      // KPI formulas
+      const occPct = safeDivide(roomsSold, totalRooms) * 100; // may be NaN
+      const adr = safeDivide(revenue, roomsSold);
+      const revpar = safeDivide(revenue, totalRooms);
+
+      // Render values with formatting and fallbacks
+      elOcc.textContent = isFinite(occPct) ? formatPercent(occPct) : 'N/A';
+      elAdr.textContent = isFinite(adr) ? formatMoney(adr) : 'N/A';
+      elRevpar.textContent = isFinite(revpar) ? formatMoney(revpar) : 'N/A';
+
+      // Status & summary
+      const filled = inputs.filter(i => i.value !== '').length;
+      if (filled === 0) {
+        statusPill.textContent = 'Ready';
+        summaryPill.textContent = '—';
+      } else {
+        statusPill.textContent = 'Live • Calculating';
+        const occStr = elOcc.textContent;
+        const adrStr = elAdr.textContent;
+        const revparStr = elRevpar.textContent;
+        summaryPill.textContent = `Occ ${occStr} · ADR ${adrStr} · RevPAR ${revparStr}`;
+      }
+
+      // Visual hint if logical inconsistencies (sold > total)
+      const inconsistent = isFinite(totalRooms) && isFinite(roomsSold) && totalRooms > 0 && roomsSold > totalRooms;
+      statusPill.style.borderColor = inconsistent ? 'var(--warn)' : 'var(--ring)';
+      statusPill.style.color = inconsistent ? 'var(--warn)' : 'var(--muted)';
+      statusPill.title = inconsistent ? 'Rooms Sold exceeds Total Rooms Available' : '';
+    }
+
+    // --- Demo / Reset ------------------------------------------------------
+    function loadSample() {
+      elTotalRooms.value = 150;
+      elRoomsSold.value = 123;
+      elRevenue.value = 18250.5;
+      computeAndRender();
+    }
+
+    function resetAll() {
+      inputs.forEach(i => i.value = '');
+      computeAndRender();
+      elTotalRooms.focus();
+    }
+
+    // --- Wire up events ----------------------------------------------------
+    inputs.forEach(i => i.addEventListener('input', computeAndRender));
+    document.getElementById('btn-demo').addEventListener('click', loadSample);
+    document.getElementById('btn-reset').addEventListener('click', resetAll);
+
+    // Initialize
+    computeAndRender();
+  </script>
+</body>
+</html>
